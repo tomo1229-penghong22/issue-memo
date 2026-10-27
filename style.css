@@ -19,6 +19,27 @@ body {
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px; background: var(--card); border-bottom: 1px solid var(--line);
 }
 .repo-box { flex: 1; min-width: 0; }
+.combo { position: relative; }
+.combo input { padding-right: 42px; text-overflow: ellipsis; }
+.combo-toggle {
+  position: absolute; top: 0; right: 0; width: 42px; height: 100%; border: 0; background: transparent;
+  color: var(--muted); font-size: 16px; cursor: pointer; border-radius: 0 8px 8px 0;
+}
+.combo-toggle[aria-expanded="true"] { transform: rotate(180deg); }
+.combo-list {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; margin: 0; padding: 4px; list-style: none;
+  max-height: min(60dvh, 360px); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+.combo-list[hidden] { display: none; }
+.combo-opt, .combo-empty { padding: 9px 10px; border-radius: 6px; font-size: 15px; }
+.combo-opt { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.combo-opt.active, .combo-opt:hover { background: var(--bg); }
+.combo-opt[aria-selected="true"] { font-weight: 700; }
+.combo-opt[aria-selected="true"]::after { content: "✓"; margin-left: auto; color: var(--accent); }
+.combo-name { min-width: 0; overflow-wrap: anywhere; }
+.combo-badge { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; flex: none; }
+.combo-empty { color: var(--muted); }
 input, textarea {
   width: 100%; padding: 10px 12px; font: inherit; color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: 8px;

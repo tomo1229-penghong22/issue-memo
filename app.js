@@ -130,7 +130,7 @@ function logout() {
   store.del('gh_repo');
   state.token = ''; state.repo = ''; state.repos = []; state.issues = [];
   $('#repoInput').value = '';
-  $('#repoList').replaceChildren();
+  closeCombo(false);
   renderIssues();
   $('#fab').disabled = true;
   $('#loginStatus').textContent = 'トークンを削除しました。';
@@ -142,12 +142,12 @@ async function loadRepos() {
   try {
     const repos = await ghAll('/user/repos?sort=pushed&affiliation=owner', 10);
     state.repos = repos.filter((r) => r.has_issues);
-    $('#repoList').replaceChildren(...state.repos.map((r) => el('option', { value: r.full_name })));
+    renderCombo();
     if (state.repo && state.repos.some((r) => r.full_name === state.repo)) {
       $('#repoInput').value = state.repo;
       await selectRepo(state.repo);
     } else if (state.repo) {
-      state.repo = ''; store.del('gh_repo');
+      state.repo = ''; store.del('gh_repo'); $('#repoInput').value = '';
     }
   } catch (e) {
     toast(e.message, true);
@@ -286,9 +286,101 @@ async function submitNew(e) {
 }
 
 /* ---------- イベント ---------- */
+/* ---------- リポジトリ・コンボボックス(▾で一覧表示/入力で絞り込み/キーボード操作対応) ---------- */
+const combo = { open: false, query: '', active: -1, items: [] };
+
+function comboItems() {
+  const q = combo.query.toLowerCase();
+  return q ? state.repos.filter((r) => r.full_name.toLowerCase().includes(q)) : state.repos;
+}
+
+function renderCombo() {
+  const box = $('#repoListbox');
+  const input = $('#repoInput');
+  combo.items = comboItems();
+  if (combo.active >= combo.items.length) combo.active = combo.items.length - 1;
+  if (!combo.items.length) {
+    box.replaceChildren(el('li', { class: 'combo-empty' },
+      state.repos.length ? '該当するリポジトリがありません' : 'リポジトリがありません'));
+    input.removeAttribute('aria-activedescendant');
+    return;
+  }
+  box.replaceChildren(...combo.items.map((r, idx) => {
+    const li = el('li', {
+      id: 'repo-opt-' + idx, role: 'option',
+      class: 'combo-opt' + (idx === combo.active ? ' active' : ''),
+      'aria-selected': String(r.full_name === state.repo),
+    }, el('span', { class: 'combo-name' }, r.full_name), r.private ? el('span', { class: 'combo-badge' }, 'private') : null);
+    li.addEventListener('click', () => chooseRepo(r.full_name));
+    return li;
+  }));
+  if (combo.active >= 0) input.setAttribute('aria-activedescendant', 'repo-opt-' + combo.active);
+  else input.removeAttribute('aria-activedescendant');
+}
+
+function scrollActive() {
+  const li = document.getElementById('repo-opt-' + combo.active);
+  if (li) li.scrollIntoView({ block: 'nearest' });
+}
+
+function openCombo(showAll) {
+  if (showAll) combo.query = '';
+  combo.open = true;
+  $('#repoListbox').hidden = false;
+  $('#repoInput').setAttribute('aria-expanded', 'true');
+  $('#repoToggle').setAttribute('aria-expanded', 'true');
+  combo.items = comboItems();
+  // 全件表示のときは現在の選択位置、絞り込み中は先頭をハイライト
+  combo.active = showAll ? combo.items.findIndex((r) => r.full_name === state.repo) : (combo.items.length ? 0 : -1);
+  renderCombo();
+  scrollActive();
+}
+
+function closeCombo(revert) {
+  combo.open = false;
+  combo.query = '';
+  $('#repoListbox').hidden = true;
+  $('#repoInput').setAttribute('aria-expanded', 'false');
+  $('#repoToggle').setAttribute('aria-expanded', 'false');
+  if (revert) $('#repoInput').value = state.repo; // 選ばずに閉じたら元の表示に戻す
+}
+
+function chooseRepo(name) {
+  closeCombo(false);
+  $('#repoInput').value = name;
+  $('#repoInput').blur(); // スマホのキーボードを閉じる
+  if (name !== state.repo) selectRepo(name);
+}
+
+$('#repoInput').addEventListener('click', (e) => {
+  if (!combo.open) { openCombo(true); e.target.select(); }
+});
 $('#repoInput').addEventListener('input', (e) => {
-  const v = e.target.value.trim();
-  if (state.repos.some((r) => r.full_name === v) && v !== state.repo) selectRepo(v);
+  combo.query = e.target.value.trim();
+  openCombo(false);
+});
+$('#repoInput').addEventListener('keydown', (e) => {
+  if (e.isComposing) return; // 日本語入力の変換中は何もしない
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (!combo.open) { openCombo(true); return; }
+    const n = combo.items.length;
+    if (!n) return;
+    combo.active = e.key === 'ArrowDown' ? (combo.active + 1) % n : (combo.active - 1 + n) % n;
+    renderCombo();
+    scrollActive();
+  } else if (e.key === 'Enter') {
+    if (combo.open && combo.items[combo.active]) { e.preventDefault(); chooseRepo(combo.items[combo.active].full_name); }
+  } else if (e.key === 'Escape') {
+    if (combo.open) { e.preventDefault(); closeCombo(true); }
+  } else if (e.key === 'Tab') {
+    closeCombo(true);
+  }
+});
+$('#repoToggle').addEventListener('click', () => { if (combo.open) closeCombo(true); else openCombo(true); });
+$('#repoListbox').addEventListener('mousedown', (e) => e.preventDefault()); // 入力欄のフォーカスを保つ
+document.addEventListener('click', (e) => {
+  if (combo.open && !$('#repoCombo').contains(e.target)) closeCombo(true);
 });
 $('#reloadBtn').addEventListener('click', () => { if (state.repo) { loadIssues(true); loadLabels(); } else loadRepos(); });
 $('#moreBtn').addEventListener('click', () => { state.page++; loadIssues(false); });
@@ -314,4 +406,5 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 renderIssues();
+$('#repoInput').value = state.repo;
 if (state.token) loadRepos(); else openSettings('はじめに、GitHubのトークンを設定します。');

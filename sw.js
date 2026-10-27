@@ -1,5 +1,5 @@
 // アプリ本体(HTML/CSS/JS/アイコン)だけをキャッシュする。GitHub APIは常にネットワークへ。
-const CACHE = 'issue-memo-v1';
+const CACHE = 'issue-memo-v2';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {

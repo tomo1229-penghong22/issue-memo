@@ -16,9 +16,11 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="repo-box">
-      <input id="repoInput" list="repoList" placeholder="リポジトリを選択(入力で絞り込み)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="リポジトリ">
-      <datalist id="repoList"></datalist>
+    <div class="repo-box combo" id="repoCombo">
+      <input id="repoInput" role="combobox" aria-expanded="false" aria-controls="repoListbox" aria-autocomplete="list"
+             placeholder="リポジトリを選択" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="リポジトリ">
+      <button type="button" id="repoToggle" class="combo-toggle" aria-label="リポジトリ一覧を開く" tabindex="-1">▾</button>
+      <ul id="repoListbox" class="combo-list" role="listbox" aria-label="リポジトリ一覧" hidden></ul>
     </div>
     <button id="reloadBtn" class="icon-btn" title="再読み込み" aria-label="再読み込み">↻</button>
     <button id="settingsBtn" class="icon-btn" title="設定" aria-label="設定">⚙</button>
