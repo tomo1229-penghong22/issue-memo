@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Issueメモ</title>
+  <meta name="description" content="GitHubリポジトリのIssueを一覧・作成するだけのシンプルなアプリ">
+  <meta name="theme-color" content="#1f6feb">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Issueメモ">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="repo-box">
+      <input id="repoInput" list="repoList" placeholder="リポジトリを選択(入力で絞り込み)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="リポジトリ">
+      <datalist id="repoList"></datalist>
+    </div>
+    <button id="reloadBtn" class="icon-btn" title="再読み込み" aria-label="再読み込み">↻</button>
+    <button id="settingsBtn" class="icon-btn" title="設定" aria-label="設定">⚙</button>
+  </header>
+
+  <main>
+    <div class="filters" role="tablist" aria-label="状態">
+      <button class="chip-tab active" data-state="open" role="tab">オープン</button>
+      <button class="chip-tab" data-state="closed" role="tab">クローズ</button>
+      <button class="chip-tab" data-state="all" role="tab">すべて</button>
+    </div>
+    <ul id="issueList" class="issue-list" aria-live="polite"></ul>
+    <p id="emptyMsg" class="muted center" hidden></p>
+    <div class="center"><button id="moreBtn" class="btn" hidden>さらに読み込む</button></div>
+  </main>
+
+  <button id="fab" class="fab" title="新しいIssue" aria-label="新しいIssue" disabled>＋</button>
+
+  <!-- 新規Issue -->
+  <dialog id="newDialog">
+    <form id="newForm" method="dialog" class="sheet">
+      <div class="sheet-head">
+        <h2>新しいIssue</h2>
+        <button type="button" class="icon-btn" id="newClose" aria-label="閉じる">✕</button>
+      </div>
+      <p class="muted small" id="newRepoName"></p>
+      <label>タイトル
+        <input id="titleInput" required maxlength="256" autocomplete="off">
+      </label>
+      <label>本文(Markdown可)
+        <textarea id="bodyInput" rows="6"></textarea>
+      </label>
+      <div class="field">
+        <span class="label-text">ラベル</span>
+        <div id="labelPicker" class="chips"></div>
+        <div class="add-label">
+          <input id="customLabel" placeholder="ラベルを追加(Enterで確定)" autocomplete="off" autocapitalize="off">
+          <button type="button" class="btn small" id="addLabelBtn">追加</button>
+        </div>
+        <p class="muted small">存在しないラベル名は、作成時にGitHubが自動で作成します(書き込み権限が必要)。</p>
+      </div>
+      <button type="submit" class="btn primary" id="submitBtn">Issueを作成</button>
+    </form>
+  </dialog>
+
+  <!-- 設定 -->
+  <dialog id="settingsDialog">
+    <form id="settingsForm" method="dialog" class="sheet">
+      <div class="sheet-head">
+        <h2>GitHub接続</h2>
+        <button type="button" class="icon-btn" id="settingsClose" aria-label="閉じる">✕</button>
+      </div>
+      <p class="small">Personal Access Token(PAT)を入力してください。トークンはこの端末のブラウザ内にのみ保存され、api.github.com 以外には送信されません。</p>
+      <label>トークン
+        <input id="tokenInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_… / ghp_…">
+      </label>
+      <details class="small">
+        <summary>必要な権限</summary>
+        <ul>
+          <li><b>Fine-grained</b>:対象リポジトリを選び、Repository permissions の <b>Issues: Read and write</b>(Metadataは自動でRead)</li>
+          <li><b>Classic</b>:privateも扱うなら <code>repo</code>、publicのみなら <code>public_repo</code></li>
+        </ul>
+      </details>
+      <p id="loginStatus" class="muted small"></p>
+      <div class="row">
+        <button type="submit" class="btn primary" id="saveToken">保存して接続</button>
+        <button type="button" class="btn danger" id="logoutBtn">トークンを削除</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
